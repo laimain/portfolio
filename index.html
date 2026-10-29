@@ -239,9 +239,13 @@ aside.portfolio-sidebar a[href^="tel:"] > span:last-child {
     const image=container.querySelector(night?'.night-img':'.day-image');
     if (!image) return;
     container.classList.toggle('show-night',night);
-    if(image.dataset.src&&!image.getAttribute('src')&&(container.dataset.near==='true'||image.dataset.requested==='true')) {
-        image.loading='eager'; image.src=image.dataset.src;
+    // Prepare both views together as the card approaches the viewport.
+    for(const candidate of container.querySelectorAll('.day-image, .night-img')) {
+        if(candidate.dataset.src&&!candidate.getAttribute('src')&&(container.dataset.near==='true'||image.dataset.requested==='true')) {
+            candidate.loading='eager'; candidate.src=candidate.dataset.src;
+        }
     }
+    container.classList.toggle('has-ready-day',container.querySelector('.day-image')?.dataset.ready==='true');
     const ready=image.dataset.ready==='true',failed=image.dataset.failed==='true';
     container.classList.toggle('render-ready',ready);
     container.classList.toggle('render-failed',failed);
@@ -404,6 +408,14 @@ window.portfolioObserve=function(){
 #scroll-container .render-loading {z-index:15;background:#111;transition:none;}
 #scroll-container .render-loading-ring {display:block;animation:render-loading-spin 1.3s linear infinite;}
 #scroll-container .render-ready .render-loading {opacity:0;visibility:hidden;}
+</style>
+<style id="paired-view-transition">
+/* Keep an opaque day layer underneath the fading night layer. */
+#scroll-container .render-container .day-image[data-ready="true"] {opacity:1!important;z-index:0;}
+#scroll-container .render-container .night-img {z-index:1;}
+/* A short decode should not flash a loading overlay over an existing view. */
+#scroll-container .has-ready-day:not(.render-ready) .render-loading {animation:wait-for-night .18s linear;}
+@keyframes wait-for-night {from {opacity:0;visibility:hidden;} to {opacity:0;visibility:hidden;}}
 </style>
 </head>
 <body class="antialiased selection:bg-brand-white selection:text-brand-black">
